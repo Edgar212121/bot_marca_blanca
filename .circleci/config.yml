@@ -1,0 +1,46 @@
+version: 2
+jobs:
+    deploy-devel:
+        working_directory: ~/repo
+        docker:
+            - image: node:10.16.0-jessie
+        steps:
+            - restore_cache:
+                keys:
+                  - source-v1-{{ .Branch }}
+            - checkout
+            - save_cache:
+                key: source-v1-{{ .Branch }}
+                paths:
+                  - ".git"
+            - restore_cache:
+                keys:
+                  - 'changenow-bot-{{ checksum "package.json" }}'
+            - run: apt-get update
+            - run: apt-get install rsync -y
+            - run:
+                  name: update-npm
+                  command: 'npm install -g npm@6.4.1'
+            - run: npm install --unsafe-perm
+            - save_cache:
+                key: 'changenow-bot-{{ checksum "package.json" }}'
+                paths:
+                  - "node_modules"
+            - run:
+                  name: Deploy app
+                  command: rsync -e "ssh -o StrictHostKeyChecking=no" -vzh --recursive --progress . bot@51.158.170.25:/home/bot/changenow-bot
+            - run:
+                  name: npm install
+                  command: ssh -o StrictHostKeyChecking=no bot@51.158.170.25 cd /home/bot/changenow-bot && npm install
+            - run:
+                  name: pm2 restart
+                  command: ssh -o StrictHostKeyChecking=no bot@51.158.170.25 pm2 startOrRestart /home/bot/changenow-bot/pm2.config.js
+workflows:
+    version: 2
+    changenow-bot:
+        jobs:
+            - deploy-devel:
+                filters:
+                    branches:
+                        only:
+                            - dev

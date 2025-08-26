@@ -1,0 +1,31 @@
+const updateSubTypes = {
+  voice: 'voice',
+  video_note: 'video_note',
+  video: 'video',
+  venue: 'venue',
+  text: 'text',
+  supergroup_chat_created: 'supergroup_chat_created',
+  successful_payment: 'successful_payment',
+  sticker: 'sticker',
+  pinned_message: 'pinned_message',
+  photo: 'photo',
+  new_chat_title: 'new_chat_title',
+  new_chat_photo: 'new_chat_photo',
+  new_chat_members: 'new_chat_members',
+  migrate_to_chat_id: 'migrate_to_chat_id',
+  migrate_from_chat_id: 'migrate_from_chat_id',
+  location: 'location',
+  left_chat_member: 'left_chat_member',
+  invoice: 'invoice',
+  group_chat_created: 'group_chat_created',
+  game: 'game',
+  document: 'document',
+  delete_chat_photo: 'delete_chat_photo',
+  contact: 'contact',
+  channel_chat_created: 'channel_chat_created',
+  audio: 'audio',
+  passport_data: 'passport_data',
+  connected_website: 'connected_website'
+};
+
+export default updateSubTypes;

@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+.idea
+error.log
+info.log
+/changenow-telegram-bot.iml
+/dump.rdb
+.env
+data/db
