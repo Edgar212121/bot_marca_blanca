@@ -42,10 +42,12 @@ const _apiRequestUnsafe = async options => {
   }
 };
 
+// ✅ API KEY EN HEADER - MÉTODO CORREGIDO
 export const getAllCurrencies = async () => {
   const options = {
-    uri: `${process.env.CN_API_URL}/currencies?active=true?api_key=${process.env.CN_API_KEY}`,
+    uri: `${process.env.CN_API_URL}/currencies?active=true`,
     headers: {
+      'x-changenow-api-key': process.env.CN_API_KEY,
       'Content-Type': 'application/json'
     },
     json: true
@@ -56,7 +58,11 @@ export const getAllCurrencies = async () => {
 
 export const getPairs = async () => {
   const options = {
-    uri: `${process.env.CN_API_URL}/market-info/available-pairs/?api_key=${process.env.CN_API_KEY}`,
+    uri: `${process.env.CN_API_URL}/market-info/available-pairs`,
+    headers: {
+      'x-changenow-api-key': process.env.CN_API_KEY,
+      'Content-Type': 'application/json'
+    },
   };
 
   return await _apiRequest(options);
@@ -64,7 +70,11 @@ export const getPairs = async () => {
 
 export const getMinimumDepositAmount = async pair => {
   const options = {
-    uri: `${process.env.CN_API_URL}/min-amount/${pair}?api_key=${process.env.CN_API_KEY}`,
+    uri: `${process.env.CN_API_URL}/min-amount/${pair}`,
+    headers: {
+      'x-changenow-api-key': process.env.CN_API_KEY,
+      'Content-Type': 'application/json'
+    },
   };
 
   return await _apiRequest(options);
@@ -72,30 +82,73 @@ export const getMinimumDepositAmount = async pair => {
 
 export const getCurrInfo = async cur => {
   const options = {
-    uri: `${process.env.CN_API_URL}/currencies/${cur}?api_key=${process.env.CN_API_KEY}`,
+    uri: `${process.env.CN_API_URL}/currencies/${cur}`,
+    headers: {
+      'x-changenow-api-key': process.env.CN_API_KEY,
+      'Content-Type': 'application/json'
+    },
   };
 
   return await _apiRequest(options);
 };
 
+// ✅ FUNCIÓN CORREGIDA - LA MÁS IMPORTANTE (la que causaba el error del monto)
 export const getExchAmount = async (amount, fromTo) => {
-  const options = {
-    uri: `${process.env.CN_API_URL}/exchange-amount/${amount}/${fromTo}?api_key=${process.env.CN_API_KEY}`,
-  };
-  try {
-    return await _apiRequestUnsafe(options);
-  }
-  catch (e) {
-    logger.error("err:" + e.message);
-    return e.message
+  // Validar que el monto sea un número válido
+  if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+    logger.error(`Invalid amount: ${amount}`);
+    return { error: 'Invalid amount provided' };
   }
 
+  const options = {
+    uri: `${process.env.CN_API_URL}/exchange-amount/${amount}/${fromTo}`,
+    headers: {
+      'x-changenow-api-key': process.env.CN_API_KEY, // ✅ CORREGIDO: Header en lugar de query param
+      'Content-Type': 'application/json'
+    },
+    json: true
+  };
+  
+  try {
+    logger.info(`Requesting exchange amount for: ${amount} ${fromTo}`);
+    const response = await _apiRequestUnsafe(options);
+    
+    // Validar la respuesta
+    if (response && response.estimatedAmount) {
+      logger.info(`Exchange successful: ${amount} → ${response.estimatedAmount}`);
+      return response;
+    } else {
+      logger.error(`Invalid API response: ${JSON.stringify(response)}`);
+      return { error: 'Invalid API response' };
+    }
+  }
+  catch (e) {
+    logger.error("Exchange amount error: " + e.message);
+    logger.error("Status code:", e.statusCode);
+    
+    // Manejar errores específicos de la API
+    if (e.statusCode === 401) {
+      return { error: 'API Key unauthorized. Verify your ChangeNow API key.' };
+    } else if (e.statusCode === 400) {
+      return { error: 'Invalid parameters. Check currency pair and amount.' };
+    } else if (e.statusCode === 422) {
+      return { error: 'Amount below minimum or invalid currency pair.' };
+    } else if (e.statusCode === 500) {
+      return { error: 'Service temporarily unavailable. Please try again.' };
+    }
+    
+    return { error: e.message || 'Unknown error occurred' };
+  }
 };
 
 export const sendTransactionData = async data => {
   const options = {
     method: 'POST',
-    uri: `${process.env.CN_API_URL}/transactions/${process.env.CN_API_KEY}`,
+    uri: `${process.env.CN_API_URL}/transactions`,
+    headers: {
+      'x-changenow-api-key': process.env.CN_API_KEY,
+      'Content-Type': 'application/json'
+    },
     body: data,
   };
 
@@ -104,7 +157,11 @@ export const sendTransactionData = async data => {
 
 export const getTransactionStatus = async id => {
   const options = {
-    uri: `${process.env.CN_API_URL}/transactions/${id}/${process.env.CN_API_KEY}`,
+    uri: `${process.env.CN_API_URL}/transactions/${id}`,
+    headers: {
+      'x-changenow-api-key': process.env.CN_API_KEY,
+      'Content-Type': 'application/json'
+    },
   };
 
   return await _apiRequest(options);
@@ -123,7 +180,6 @@ class ContentApi {
     ContentApi.instance = this;
     return this;
   }
-
 
   async getContentCurrenciesFromApi() {
     console.log("request contentApi.currencies");
